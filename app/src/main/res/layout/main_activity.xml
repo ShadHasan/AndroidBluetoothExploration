@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:fitsSystemWindows="true">
+
+    <TextView
+        android:id="@+id/our_device_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40dp"
+        android:paddingVertical="10dp"
+        android:background="#FF0000"
+        android:textColor="@color/black"
+        android:text="Bluetooth: Loading..."
+        />
+    <Button
+        android:id="@+id/list_card_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Discover device"
+        android:layout_margin="40dp"
+        android:textColor="#000000"
+        android:backgroundTint="#F0F0F0"/>
+    <LinearLayout
+        android:id="@+id/discovered_device_table"
+        android:layout_width="match_parent"
+        android:layout_margin="20dp"
+        android:layout_height="wrap_content">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            android:paddingHorizontal="10dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="4"
+                android:background="#FF0000"
+                android:paddingVertical="10dp"
+                android:textColor="@color/black"
+                android:text="No device found"
+                android:hint="here"/>
+        </TableRow>
+
+    </LinearLayout>
+
+</LinearLayout>
