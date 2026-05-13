@@ -25,10 +25,11 @@
         android:layout_margin="40dp"
         android:textColor="#000000"
         android:backgroundTint="#F0F0F0"/>
-    <LinearLayout
+    <TableLayout
         android:id="@+id/discovered_device_table"
         android:layout_width="match_parent"
         android:layout_margin="20dp"
+        android:stretchColumns="0"
         android:layout_height="wrap_content">
 
         <TableRow
@@ -48,6 +49,6 @@
                 android:hint="here"/>
         </TableRow>
 
-    </LinearLayout>
+    </TableLayout>
 
 </LinearLayout>
