@@ -243,13 +243,15 @@ class OpenConnection extends Thread {
 class BluetoothClient extends Thread {
     private BluetoothSocket mmSocket;
     private BluetoothAdapter bluetoothAdapter;
+    Context context;
 
-    public BluetoothClient(BluetoothDevice device, BluetoothAdapter bluetoothAdapter, UUID MY_UUID) {
+    public BluetoothClient(Context context, BluetoothDevice device, BluetoothAdapter bluetoothAdapter, UUID MY_UUID) {
         this.bluetoothAdapter = bluetoothAdapter;
+        this.context = context;
         BluetoothSocket tmp = null;
         try {
 // Get a socket to connect with the given device
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
                 //    ActivityCompat#requestPermissions
                 // here to request the missing permissions, and then overriding
@@ -264,7 +266,7 @@ class BluetoothClient extends Thread {
         mmSocket = tmp;
     }
     public void run() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
