@@ -37,6 +37,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -216,20 +217,13 @@ class OpenConnection extends Thread {
         while (true) {
             try {
                 socket = serverSocket.accept(); // Blocks until connection accepted
-            } catch (IOException e) { break; }
+            } catch (IOException e) {
+                break;
+            }
             if (socket != null) {
                 try {
 
-                    // A connection was accepted. Manage it in a separate thread.
-                    InputStream ins = socket.getInputStream();
-                    StringBuilder textBuilder = new StringBuilder();
-                    try (Reader reader = new BufferedReader(new InputStreamReader
-                            (ins, StandardCharsets.UTF_8))) {
-                        int c = 0;
-                        while ((c = reader.read()) != -1) {
-                            textBuilder.append((char) c);
-                        }
-                    }
+
                     serverSocket.close();
                 } catch (IOException e) {
                     Log.d("Server socket IO exception", e.toString());
@@ -238,6 +232,8 @@ class OpenConnection extends Thread {
             }
         }
     }
+
+
 }
 
 class BluetoothClient extends Thread {
@@ -278,10 +274,81 @@ class BluetoothClient extends Thread {
         }
         bluetoothAdapter.cancelDiscovery(); // Always cancel discovery before connecting
         try {
-            mmSocket.connect(); // Connect to the remote device
-            // Now use mmSocket.getOutputStream() to send data
+            // Connect to the remote device through the socket. This call blocks
+            // until it succeeds or throws an exception.
+            mmSocket.connect();
         } catch (IOException connectException) {
-            try { mmSocket.close(); } catch (IOException closeException) { }
+            // Unable to connect; close the socket and clean up
+            try {
+                mmSocket.close();
+            } catch (IOException closeException) {
+                Log.e("Bluetooth", "Could not close the client socket", closeException);
+            }
+            connectionFailed(); // Handle error (e.g., notify UI via Handler)
+            return;
         }
+
+        // Connection attempt succeeded! Pass the socket to your ConnectedThread
+        manageMyConnectedSocket(mmSocket);
+    }
+
+    public void cancel() {
+        try {
+            mmSocket.close();
+        } catch (IOException e) {
+            Log.e("Bluetooth", "Could not close the client socket during cancel", e);
+        }
+    }
+}
+
+// Simplified ConnectedThread example
+class ConnectedThread extends Thread {
+    private final BluetoothSocket mmSocket;
+    private final InputStream mmInStream;
+    private final OutputStream mmOutStream;
+
+    public ConnectedThread(BluetoothSocket socket) {
+        mmSocket = socket;
+        try {
+            mmInStream = socket.getInputStream();
+            mmOutStream = socket.getOutputStream();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public void run() {
+        // Bytes reading sample
+        /*
+        byte[] buffer = new byte[1024];
+        int bytes;
+        while (true) {
+            try {
+                bytes = mmInStream.read(buffer); // Read data
+                // Handle received data here
+            } catch (IOException e) { break; }
+        }*/
+
+        // A connection was accepted. Manage it in a separate thread.
+        try {
+            InputStream ins = mmSocket.getInputStream();
+            StringBuilder textBuilder = new StringBuilder();
+            try (Reader reader = new BufferedReader(new InputStreamReader
+                    (ins, StandardCharsets.UTF_8))) {
+                int c = 0;
+                while ((c = reader.read()) != -1) {
+                    textBuilder.append((char) c);
+                }
+            }
+        } catch (IOException e) {
+            Log.e("Socket data reading error", e.toString());
+        }
+    }
+
+    public void write(byte[] bytes) { // Send data
+        try {
+            mmOutStream.write(bytes);
+        } catch (IOException e) { }
     }
 }

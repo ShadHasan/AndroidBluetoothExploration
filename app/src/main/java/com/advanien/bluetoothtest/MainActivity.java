@@ -1,19 +1,19 @@
 package com.advanien.bluetoothtest;
 
 
-import android.content.pm.PackageManager;
-import android.graphics.Color;
+
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TableLayout;
-import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
+import com.advanien.bluetoothtest.model.MyConstants;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -132,6 +132,32 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, "All permissions granted!", Toast.LENGTH_SHORT).show();
     }
 
+    private final Handler mHandler = new Handler(Looper.getMainLooper()) {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MyConstants.MESSAGE_STATE_CHANGE:
+                    switch (msg.arg1) {
+                        case MyConstants.STATE_CONNECTED:
+                            setBluetoothStatus("Connected to device");
+                            break;
+                        case MyConstants.STATE_CONNECTING:
+                            setBluetoothStatus("Connecting...");
+                            break;
+                    }
+                    break;
+                case MyConstants.MESSAGE_READ:
+                    byte[] readBuf = (byte[]) msg.obj;
+                    String readMessage = new String(readBuf, 0, msg.arg1);
+                    updateBluetoothChatWindow(readMessage);
+                    break;
+            }
+        }
+    };
+
+    // UI Update Methods
+    private void setBluetoothStatus(String text) { /* Update TextView */ }
+    private void updateBluetoothChatWindow(String text) { /* Append text to UI */ }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
