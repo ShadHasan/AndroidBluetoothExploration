@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     TableLayout deviceListTable;
     LinearLayout discoverMode;
     LinearLayout openBTMode;
+    Button discoverModeButton;
 
 
     // 1. Declare and register the launcher at the class level (before STARTED state)
@@ -193,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        discoverBluetooth = findViewById(R.id.list_card_button);
+        discoverBluetooth = findViewById(R.id.list_bluetooth_dev_button);
         deviceListTable = findViewById(R.id.discovered_device_table);
         deviceListTable.removeAllViews();
 

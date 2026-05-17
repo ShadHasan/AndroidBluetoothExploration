@@ -120,6 +120,7 @@ public class BluetoothInterface implements PermissionCallback {
         });
 
         tableRow.addView(textView);
+        tableRow.addView(button);
         deviceLister.addView(tableRow);
     }
 
@@ -246,7 +247,8 @@ public class BluetoothInterface implements PermissionCallback {
             case Manifest.permission.BLUETOOTH_SCAN:
                 // May be we will not call it. since it should be only initial debugging code
                 // on permission granted
-                discoveryAndRegisterFoundDevice();
+                Log.d("Adapter ready", "Adapter ready for discovery");
+                //discoveryAndRegisterFoundDevice();
                 break;
         }
     }
