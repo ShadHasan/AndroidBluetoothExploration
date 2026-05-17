@@ -38,7 +38,8 @@ public class MainActivity extends AppCompatActivity {
 
     BluetoothInterface bluetoothInterface;
     TextView bluetoothDisplay;
-    Button discoverBluetooth;
+    Button discoverBluetoothButton;
+    Button discoverBluetoothAppButton;
     SwitchCompat bluetoothModeSwitch;
     TableLayout deviceListTable;
     LinearLayout discoverMode;
@@ -196,7 +197,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        discoverBluetooth = findViewById(R.id.list_bluetooth_dev_button);
+        discoverBluetoothButton = findViewById(R.id.list_bluetooth_dev_button);
+        discoverBluetoothAppButton = findViewById(R.id.list_bluetooth_app_dev_button);
         deviceListTable = findViewById(R.id.discovered_device_table);
         deviceListTable.removeAllViews();
 
@@ -206,8 +208,12 @@ public class MainActivity extends AppCompatActivity {
 
         triggerAllPermissionRequest();
 
-        discoverBluetooth.setOnClickListener(v->{
+        discoverBluetoothButton.setOnClickListener(v->{
             bluetoothInterface.discoveryAndRegisterFoundDevice();
+        });
+
+        discoverBluetoothAppButton.setOnClickListener(v->{
+            bluetoothInterface.discoveryAndRegisterAppFoundDevice();
         });
 
     }

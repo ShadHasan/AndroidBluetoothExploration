@@ -52,12 +52,10 @@ import java.util.UUID;
 
 public class BluetoothInterface implements PermissionCallback {
     private final UUID uuid = UUID.fromString("21989a0f-8f92-4534-8400-1688ffbd6d0a");
-
     private final String AppName= "BluetoothApp01";
     private TableLayout deviceLister;
     // Get the BluetoothManager service
     private BluetoothManager bluetoothManager;
-
     BluetoothDevice ListenerPairingDevice;
 
     // Get the adapter from the manager
@@ -148,7 +146,8 @@ public class BluetoothInterface implements PermissionCallback {
     }
 
     public void discoveryAndRegisterFoundDevice() {
-        Log.d("called", "Not called");
+        Log.d("Discovery for device", "started");
+        deviceLister.removeAllViews();
         discoveredBluetoothDeviceList = new ArrayList<>();
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
             Log.d("called", "Here 1");
@@ -196,6 +195,75 @@ public class BluetoothInterface implements PermissionCallback {
                             deviceName + ", " + deviceHardwareAddress,
                             discoveredBluetoothDeviceList.lastIndexOf(device)
                             );
+
+                }
+            }
+        };
+
+        // 2. Register for ACTION_FOUND
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+
+        /*
+        context: The context to register the receiver
+        (e.g., this in an Activity).receiver: The BroadcastReceiver instance.filter:
+        The IntentFilter defining the actions to listen for.flags: Crucial on SDK 34+, must be
+        either ContextCompat.RECEIVER_EXPORTED or ContextCompat.RECEIVER_NOT_EXPORTED.
+         */
+
+        context.registerReceiver(receiver, filter);
+
+    }
+
+    public void discoveryAndRegisterAppFoundDevice() {
+        Log.d("Discovery for app device", "started");
+        deviceLister.removeAllViews();
+        discoveredBluetoothDeviceList = new ArrayList<>();
+        if (ActivityCompat.checkSelfPermission(
+                context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        if (bluetoothAdapter.isEnabled()) {
+            Log.d("Bluetooth function", "starting discovery");
+            bluetoothAdapter.startDiscovery();
+            Log.d("Bluetooth function", "discovery is " + bluetoothAdapter.isDiscovering());
+        } else {
+            Toast.makeText(context, "Turn on bluetooth device", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 1. Handle results in BroadcastReceiver
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            public void onReceive(Context context, Intent intent) {
+                if (BluetoothDevice.ACTION_UUID.equals(intent.getAction())) {
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    if (ActivityCompat.checkSelfPermission(
+                            context, Manifest.permission.BLUETOOTH_SCAN) !=
+                            PackageManager.PERMISSION_GRANTED) {
+                        // TODO: Consider calling
+                        //    ActivityCompat#requestPermissions
+                        // here to request the missing permissions, and then overriding
+                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                        //                                          int[] grantResults)
+                        // to handle the case where the user grants the permission. See the documentation
+                        // for ActivityCompat#requestPermissions for more details.
+                        return;
+                    }
+                    Log.d("Listing device", "======");
+                    String deviceName = device.getName();
+                    String deviceHardwareAddress = device.getAddress(); // MAC address
+                    Log.d("Device discovered", deviceName + ", " + deviceHardwareAddress);
+                    discoveredBluetoothDeviceList.add(device);
+                    addDeviceMainScreenToDeviceLister(
+                            deviceName + ", " + deviceHardwareAddress,
+                            discoveredBluetoothDeviceList.lastIndexOf(device)
+                    );
 
                 }
             }
