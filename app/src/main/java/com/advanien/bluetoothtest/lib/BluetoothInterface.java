@@ -63,10 +63,10 @@ public class BluetoothInterface implements PermissionCallback {
     private String adapterName;
     private Handler handler;
     Context context;
-
     List<BluetoothDevice> discoveredBluetoothDeviceList;
-
     private ConnectedThread mConnectedThread;
+    private OpenConnection serverConnection;
+    private BluetoothClient bluetoothClient;
 
     public BluetoothInterface(Context context, TableLayout deviceLister, Handler handler) {
         bluetoothManager = context.getSystemService(BluetoothManager.class);
@@ -113,7 +113,7 @@ public class BluetoothInterface implements PermissionCallback {
         // On click connect button, start connecting picked discover device as client.
         button.setOnClickListener(v -> {
             ListenerPairingDevice = discoveredBluetoothDeviceList.get(elementIndex);
-            BluetoothClient bluetoothClient = new BluetoothClient(this);
+            bluetoothClient = new BluetoothClient(this);
             bluetoothClient.start();
         });
 
@@ -355,6 +355,15 @@ public class BluetoothInterface implements PermissionCallback {
 
     }
 
+    public synchronized void openServerConnection() {
+        serverConnection = new OpenConnection(this);
+        serverConnection.start();
+    }
+
+    public synchronized void closeServerConnection() {
+        serverConnection.cancel();
+    }
+
 }
 
 class OpenConnection extends Thread {
@@ -392,7 +401,7 @@ class OpenConnection extends Thread {
         while (true) {
             try {
                 socket = serverSocket.accept(); // Blocks until connection accepted
-            } catch (IOException e) {
+            } catch (IOException e) { // if socket closed IOException break the loop.
                 break;
             }
             if (socket != null) {
@@ -405,6 +414,17 @@ class OpenConnection extends Thread {
                 break;
             }
         }
+    }
+
+    public void cancel() {
+        try {
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
+        } catch (IOException e) {
+            Log.e("Bluetooth server socker error", "Could not close the connect socket", e);
+        }
+
     }
 
 }

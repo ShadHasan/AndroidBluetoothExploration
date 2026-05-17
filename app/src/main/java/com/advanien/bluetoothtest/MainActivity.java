@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     TextView bluetoothDisplay;
     Button discoverBluetoothButton;
     Button discoverBluetoothAppButton;
+    Button openConnectionButton;
     SwitchCompat bluetoothModeSwitch;
     TableLayout deviceListTable;
     LinearLayout discoverMode;
@@ -199,6 +200,7 @@ public class MainActivity extends AppCompatActivity {
 
         discoverBluetoothButton = findViewById(R.id.list_bluetooth_dev_button);
         discoverBluetoothAppButton = findViewById(R.id.list_bluetooth_app_dev_button);
+        openConnectionButton = findViewById(R.id.open_connection);
         deviceListTable = findViewById(R.id.discovered_device_table);
         deviceListTable.removeAllViews();
 
@@ -214,6 +216,10 @@ public class MainActivity extends AppCompatActivity {
 
         discoverBluetoothAppButton.setOnClickListener(v->{
             bluetoothInterface.discoveryAndRegisterAppFoundDevice();
+        });
+
+        openConnectionButton.setOnClickListener(v -> {
+
         });
 
     }
