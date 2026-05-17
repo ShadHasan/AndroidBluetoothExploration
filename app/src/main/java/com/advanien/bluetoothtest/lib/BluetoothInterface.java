@@ -16,9 +16,13 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -32,6 +36,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.advanien.bluetoothtest.R;
+import com.advanien.bluetoothtest.model.MyConstants;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -39,33 +44,55 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class BluetoothInterface implements PermissionCallback {
     private final UUID uuid = UUID.fromString("21989a0f-8f92-4534-8400-1688ffbd6d0a");
+
+    private final String AppName= "BluetoothApp01";
     private TableLayout deviceLister;
     // Get the BluetoothManager service
     private BluetoothManager bluetoothManager;
+
+    BluetoothDevice ListenerPairingDevice;
+
     // Get the adapter from the manager
     private BluetoothAdapter bluetoothAdapter;
     private String adapterName;
+    private Handler handler;
     Context context;
 
-    public BluetoothInterface(Context context, TableLayout deviceLister) {
+    List<BluetoothDevice> discoveredBluetoothDeviceList;
+
+    private ConnectedThread mConnectedThread;
+
+    public BluetoothInterface(Context context, TableLayout deviceLister, Handler handler) {
         bluetoothManager = context.getSystemService(BluetoothManager.class);
         bluetoothAdapter = bluetoothManager.getAdapter();
         this.context = context;
         this.deviceLister = deviceLister;
+        this.handler = handler;
     }
 
-    public void addDeviceMainScreenToDeviceLister(String name) {
+    private int dpToPx(int dp) {
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                dp,
+                context.getResources().getDisplayMetrics()
+        );
+    }
+
+    public void addDeviceMainScreenToDeviceLister(String name, int elementIndex) {
         TextView textView = new TextView(context);
         textView.setText(name);
         textView.setLayoutParams(new TableRow.LayoutParams(
-                TableRow.LayoutParams.MATCH_PARENT,
+                dpToPx(0),
                 TableRow.LayoutParams.WRAP_CONTENT,
-                4.0f
+                1.0f
         ));
         textView.setBackgroundColor(Color.WHITE);
         textView.setTextColor(Color.BLACK);
@@ -75,6 +102,23 @@ public class BluetoothInterface implements PermissionCallback {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         ));
+
+        Button button = new Button(context);
+        button.setText("connect");
+        button.setLayoutParams(new TableRow.LayoutParams(
+                dpToPx(0),
+                TableRow.LayoutParams.WRAP_CONTENT,
+                1.0f
+        ));
+        button.setId(elementIndex);
+
+        // On click connect button, start connecting picked discover device as client.
+        button.setOnClickListener(v -> {
+            ListenerPairingDevice = discoveredBluetoothDeviceList.get(elementIndex);
+            BluetoothClient bluetoothClient = new BluetoothClient(this);
+            bluetoothClient.start();
+        });
+
         tableRow.addView(textView);
         deviceLister.addView(tableRow);
     }
@@ -82,8 +126,20 @@ public class BluetoothInterface implements PermissionCallback {
     public BluetoothAdapter getBluetoothAdapter() {
         return bluetoothAdapter;
     }
+
     public String getAdapterName() {
         return adapterName;
+    }
+    public String getAppName() {
+        return AppName;
+    }
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public BluetoothDevice getListenerPairingDevice() {
+        return ListenerPairingDevice;
     }
 
     public void setAdapterName(String name) {
@@ -92,6 +148,7 @@ public class BluetoothInterface implements PermissionCallback {
 
     public void discoveryAndRegisterFoundDevice() {
         Log.d("called", "Not called");
+        discoveredBluetoothDeviceList = new ArrayList<>();
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
             Log.d("called", "Here 1");
             // TODO: Consider calling
@@ -133,7 +190,12 @@ public class BluetoothInterface implements PermissionCallback {
                     String deviceName = device.getName();
                     String deviceHardwareAddress = device.getAddress(); // MAC address
                     Log.d("Device discovered", deviceName + ", " + deviceHardwareAddress);
-                    addDeviceMainScreenToDeviceLister(deviceName + ", " + deviceHardwareAddress);
+                    discoveredBluetoothDeviceList.add(device);
+                    addDeviceMainScreenToDeviceLister(
+                            deviceName + ", " + deviceHardwareAddress,
+                            discoveredBluetoothDeviceList.lastIndexOf(device)
+                            );
+
                 }
             }
         };
@@ -167,7 +229,7 @@ public class BluetoothInterface implements PermissionCallback {
             return;
         }
         setAdapterName(getBluetoothAdapter().getName());
-        ((TextView)activity.findViewById(R.id.our_device_text)).setText(getAdapterName());
+        ((TextView) activity.findViewById(R.id.our_device_text)).setText(getAdapterName());
     }
 
     @Override
@@ -188,16 +250,56 @@ public class BluetoothInterface implements PermissionCallback {
                 break;
         }
     }
+
+    public void manageMyConnectedSocket(BluetoothSocket socket) {
+        // Cancel any existing running transfer thread first
+        if (mConnectedThread != null) {
+            mConnectedThread.cancel();
+            mConnectedThread = null;
+        }
+
+        // Initialize the thread to manage the socket and start data transfer
+        mConnectedThread = new ConnectedThread(socket);
+        mConnectedThread.start();
+
+        // Optional: Send a status update message back to your UI Activity/Fragment
+        Message message = handler.obtainMessage(MyConstants.MESSAGE_STATE_CHANGE, MyConstants.STATE_CONNECTED, -1);
+        message.sendToTarget();
+    }
+
+    public void connectionFailed(String endpoint, String description) {
+        Message message;
+        // Optional: Send a status update message back to your UI Activity/Fragment
+        switch (endpoint) {
+            case "client":
+                message = handler.obtainMessage(
+                    MyConstants.CONNECTION_FAILED, MyConstants.CLIENT_FAILURE, -1, description);
+            message.sendToTarget();
+            break;
+            case "server":
+                message = handler.obtainMessage(
+                        MyConstants.CONNECTION_FAILED, MyConstants.SERVER_FAILURE, -1, description);
+                message.sendToTarget();
+                break;
+        }
+
+    }
+
 }
 
 class OpenConnection extends Thread {
     private BluetoothServerSocket serverSocket;
+    BluetoothInterface bluetoothInterface;
 
-    public OpenConnection(Context context, BluetoothAdapter bluetoothAdapter, String AppName, UUID MY_UUID) {
+    //Context context, BluetoothAdapter bluetoothAdapter, String AppName, UUID MY_UUID
+    public OpenConnection(BluetoothInterface bluetoothInterface) {
+        this.bluetoothInterface = bluetoothInterface;
         BluetoothServerSocket tmp = null;
         try {
             // UUID must match the client's UUID
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(
+                    bluetoothInterface.context, Manifest.permission.BLUETOOTH_CONNECT)
+                    != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
                 //    ActivityCompat#requestPermissions
                 // here to request the missing permissions, and then overriding
@@ -207,7 +309,10 @@ class OpenConnection extends Thread {
                 // for ActivityCompat#requestPermissions for more details.
                 return;
             }
-            tmp = bluetoothAdapter.listenUsingRfcommWithServiceRecord(AppName, MY_UUID);
+            tmp = bluetoothInterface.getBluetoothAdapter()
+                    .listenUsingRfcommWithServiceRecord(
+                            bluetoothInterface.getAppName(),
+                            bluetoothInterface.getUuid());
         } catch (IOException e) { }
         serverSocket = tmp;
     }
@@ -221,9 +326,8 @@ class OpenConnection extends Thread {
                 break;
             }
             if (socket != null) {
+                bluetoothInterface.manageMyConnectedSocket(socket); // Pass socket to data transfer
                 try {
-
-
                     serverSocket.close();
                 } catch (IOException e) {
                     Log.d("Server socket IO exception", e.toString());
@@ -233,21 +337,21 @@ class OpenConnection extends Thread {
         }
     }
 
-
 }
 
 class BluetoothClient extends Thread {
     private BluetoothSocket mmSocket;
-    private BluetoothAdapter bluetoothAdapter;
-    Context context;
+    BluetoothInterface bluetoothInterface;
 
-    public BluetoothClient(Context context, BluetoothDevice device, BluetoothAdapter bluetoothAdapter, UUID MY_UUID) {
-        this.bluetoothAdapter = bluetoothAdapter;
-        this.context = context;
+    // Context context, BluetoothDevice device, BluetoothAdapter bluetoothAdapter, UUID MY_UUID
+    public BluetoothClient(BluetoothInterface bluetoothInterface) {
+        this.bluetoothInterface = bluetoothInterface;
         BluetoothSocket tmp = null;
         try {
 // Get a socket to connect with the given device
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(
+                    bluetoothInterface.context,
+                    Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
                 //    ActivityCompat#requestPermissions
                 // here to request the missing permissions, and then overriding
@@ -257,12 +361,16 @@ class BluetoothClient extends Thread {
                 // for ActivityCompat#requestPermissions for more details.
                 return;
             }
-            tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
+            tmp = bluetoothInterface
+                    .getListenerPairingDevice()
+                    .createRfcommSocketToServiceRecord(bluetoothInterface.getUuid());
         } catch (IOException e) { }
         mmSocket = tmp;
     }
     public void run() {
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(
+                bluetoothInterface.context,
+                Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -272,7 +380,8 @@ class BluetoothClient extends Thread {
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
-        bluetoothAdapter.cancelDiscovery(); // Always cancel discovery before connecting
+        // Always cancel discovery before connecting
+        bluetoothInterface.getBluetoothAdapter().cancelDiscovery();
         try {
             // Connect to the remote device through the socket. This call blocks
             // until it succeeds or throws an exception.
@@ -284,12 +393,12 @@ class BluetoothClient extends Thread {
             } catch (IOException closeException) {
                 Log.e("Bluetooth", "Could not close the client socket", closeException);
             }
-            connectionFailed(); // Handle error (e.g., notify UI via Handler)
+            bluetoothInterface.connectionFailed("client", "Socket IOConnection failed"); // Handle error (e.g., notify UI via Handler)
             return;
         }
 
         // Connection attempt succeeded! Pass the socket to your ConnectedThread
-        manageMyConnectedSocket(mmSocket);
+        bluetoothInterface.manageMyConnectedSocket(mmSocket);
     }
 
     public void cancel() {
@@ -315,7 +424,6 @@ class ConnectedThread extends Thread {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     public void run() {
@@ -330,7 +438,6 @@ class ConnectedThread extends Thread {
             } catch (IOException e) { break; }
         }*/
 
-        // A connection was accepted. Manage it in a separate thread.
         try {
             InputStream ins = mmSocket.getInputStream();
             StringBuilder textBuilder = new StringBuilder();
@@ -351,4 +458,14 @@ class ConnectedThread extends Thread {
             mmOutStream.write(bytes);
         } catch (IOException e) { }
     }
+
+    public void cancel() {
+        try {
+            // Closing the socket immediately breaks the read() loop in the thread run() method
+            mmSocket.close();
+        } catch (IOException e) {
+            Log.e("Bluetooth", "Could not close the connect socket", e);
+        }
+    }
+
 }

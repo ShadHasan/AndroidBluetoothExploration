@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -17,38 +18,83 @@
         android:textColor="@color/black"
         android:text="Bluetooth: Loading..."
         />
-    <Button
-        android:id="@+id/list_card_button"
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switch_bluetooth_mode"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Discover device"
         android:layout_margin="40dp"
-        android:textColor="#000000"
-        android:backgroundTint="#F0F0F0"/>
-    <TableLayout
-        android:id="@+id/discovered_device_table"
-        android:layout_width="match_parent"
-        android:layout_margin="20dp"
-        android:stretchColumns="0"
-        android:layout_height="wrap_content">
+        android:textOn="Server"
+        android:textOff="Client"
+        android:contentDescription="Switch bluetooth mode"
+        android:text="Open/Discover" />
 
-        <TableRow
+    <LinearLayout
+        android:id="@+id/discover_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:visibility="gone">
+        <Button
+            android:id="@+id/list_card_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/white"
-            android:paddingHorizontal="10dp">
+            android:text="Discover device"
+            android:layout_margin="40dp"
+            android:textColor="#000000"
+            android:backgroundTint="#F0F0F0"/>
+        <TableLayout
+            android:id="@+id/discovered_device_table"
+            android:layout_width="match_parent"
+            android:layout_margin="20dp"
+            android:stretchColumns="1"
+            android:layout_gravity="end"
+            android:layout_height="wrap_content">
 
-            <TextView
+            <TableRow
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:background="#FF0000"
-                android:paddingVertical="10dp"
-                android:textColor="@color/black"
-                android:text="No device found"
-                android:hint="here"/>
-        </TableRow>
+                android:background="@color/white"
+                android:paddingHorizontal="10dp">
 
-    </TableLayout>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="4"
+                    android:background="#FF0000"
+                    android:paddingVertical="10dp"
+                    android:textColor="@color/black"
+                    android:text="No device found"
+                    android:hint="here"/>
+            </TableRow>
+
+        </TableLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/listener_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:visibility="visible">
+        <Button
+            android:id="@+id/open_connection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Open Connection"
+            android:layout_margin="40dp"
+            android:textColor="#000000"
+            android:backgroundTint="#F0F0F0"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="4"
+            android:background="#FF0000"
+            android:paddingVertical="10dp"
+            android:layout_margin="40dp"
+            android:textColor="@color/black"
+            android:text="Status: Closed"/>
+    </LinearLayout>
 
 </LinearLayout>

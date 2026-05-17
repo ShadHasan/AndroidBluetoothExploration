@@ -8,17 +8,24 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
+import android.widget.ToggleButton;
+
 import com.advanien.bluetoothtest.model.MyConstants;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -32,7 +39,10 @@ public class MainActivity extends AppCompatActivity {
     BluetoothInterface bluetoothInterface;
     TextView bluetoothDisplay;
     Button discoverBluetooth;
+    SwitchCompat bluetoothModeSwitch;
     TableLayout deviceListTable;
+    LinearLayout discoverMode;
+    LinearLayout openBTMode;
 
 
     // 1. Declare and register the launcher at the class level (before STARTED state)
@@ -165,16 +175,50 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.main_activity);
         bluetoothDisplay = findViewById(R.id.our_device_text);
+        discoverMode = findViewById(R.id.discover_mode);
+        openBTMode = findViewById(R.id.listener_mode);
+
+        bluetoothModeSwitch = findViewById(R.id.switch_bluetooth_mode);
+        // listen for user toggles
+        bluetoothModeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // handle toggle
+                manageBluetoothMode(isChecked);
+                // update UI or perform action
+                Toast.makeText(
+                        MainActivity.this,isChecked ?
+                                "Bluetooth Open" : "Bluetooth Discover",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+
         discoverBluetooth = findViewById(R.id.list_card_button);
         deviceListTable = findViewById(R.id.discovered_device_table);
-        // deviceListTable.removeAllViews();
+        deviceListTable.removeAllViews();
 
 
         // Encapsulated function for bluetooth interaction
-        bluetoothInterface = new BluetoothInterface(this, deviceListTable);
+        bluetoothInterface = new BluetoothInterface(this, deviceListTable, mHandler);
 
         triggerAllPermissionRequest();
 
+        discoverBluetooth.setOnClickListener(v->{
+            bluetoothInterface.discoveryAndRegisterFoundDevice();
+        });
+
+    }
+
+    public void manageBluetoothMode(boolean checked) {
+        Log.d("select", bluetoothModeSwitch.getTextOn().toString());
+        if(checked) {
+            discoverMode.setVisibility(View.VISIBLE);
+            openBTMode.setVisibility(View.GONE);
+        } else {
+            discoverMode.setVisibility(View.GONE);
+            openBTMode.setVisibility(View.VISIBLE);
+        }
     }
 
 }
+
