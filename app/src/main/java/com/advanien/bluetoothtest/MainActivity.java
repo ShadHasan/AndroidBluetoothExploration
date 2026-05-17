@@ -68,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
             // Apparently bluetooth permission explicitly does not request below API level 34
             String[] permissionsToRequest = new String[]{
                     Manifest.permission.CAMERA,
+                    Manifest.permission.BLUETOOTH,
+                    Manifest.permission.BLUETOOTH_ADMIN,
                     Manifest.permission.ACCESS_COARSE_LOCATION
             };
             requestPermissionsLauncher.launch(permissionsToRequest);

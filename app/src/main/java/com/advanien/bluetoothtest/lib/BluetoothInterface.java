@@ -248,7 +248,7 @@ public class BluetoothInterface implements PermissionCallback {
                 // May be we will not call it. since it should be only initial debugging code
                 // on permission granted
                 Log.d("Adapter ready", "Adapter ready for discovery");
-                //discoveryAndRegisterFoundDevice();
+                //discoveryAndRegisterFoundDevice(); // This just for debugging explicitly discovering
                 break;
         }
     }
