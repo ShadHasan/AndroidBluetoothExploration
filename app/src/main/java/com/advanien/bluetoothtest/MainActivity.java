@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout openBTMode;
     Button discoverModeButton;
     TextView connectionStatusDisplay;
+    TextView messageReceiveDisplay;
 
 
     // 1. Declare and register the launcher at the class level (before STARTED state)
@@ -193,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
     private void updateBluetoothChatWindow(String text) {
         /* Append text to UI */
         Log.d("Receive Message", text);
+        messageReceiveDisplay.setText(text);
     }
 
     @Override
@@ -202,6 +204,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.main_activity);
         bluetoothDisplay = findViewById(R.id.our_device_text);
         discoverMode = findViewById(R.id.discover_mode);
+        messageReceiveDisplay = findViewById(R.id.message_receive_display);
         openBTMode = findViewById(R.id.listener_mode);
 
         bluetoothModeSwitch = findViewById(R.id.switch_bluetooth_mode);
