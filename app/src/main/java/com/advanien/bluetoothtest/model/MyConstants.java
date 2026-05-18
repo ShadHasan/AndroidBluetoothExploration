@@ -15,5 +15,5 @@ public interface MyConstants {
     int STATE_CONNECTED = 3;  // Connected to a remote device
     int CONNECTION_FAILED = 6;
     int CLIENT_FAILURE = 7;
-    int SERVER_FAILURE = 7;
+    int SERVER_FAILURE = 8;
 }

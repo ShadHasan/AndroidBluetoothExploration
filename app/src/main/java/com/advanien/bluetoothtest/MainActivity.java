@@ -2,6 +2,7 @@ package com.advanien.bluetoothtest;
 
 
 
+import android.bluetooth.BluetoothDevice;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -152,8 +153,10 @@ public class MainActivity extends AppCompatActivity {
     private final Handler mHandler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(Message msg) {
+
             switch (msg.what) {
                 case MyConstants.MESSAGE_STATE_CHANGE:
+                    BluetoothDevice connectedDev = (BluetoothDevice)msg.obj;
                     switch (msg.arg1) {
                         case MyConstants.STATE_CONNECTED:
                             setBluetoothStatus("Connected to device");
@@ -164,9 +167,18 @@ public class MainActivity extends AppCompatActivity {
                     }
                     break;
                 case MyConstants.MESSAGE_READ:
-                    byte[] readBuf = (byte[]) msg.obj;
-                    String readMessage = new String(readBuf, 0, msg.arg1);
-                    updateBluetoothChatWindow(readMessage);
+                    String messageReceived = (String) msg.obj;
+                    updateBluetoothChatWindow(messageReceived);
+                    break;
+                case MyConstants.CONNECTION_FAILED:
+                    switch (msg.arg1) {
+                        case MyConstants.CLIENT_FAILURE:
+                            setBluetoothStatus("Connect failure on client");
+                            break;
+                        case MyConstants.SERVER_FAILURE:
+                            setBluetoothStatus("Connect failure on server");
+                            break;
+                    }
                     break;
             }
         }

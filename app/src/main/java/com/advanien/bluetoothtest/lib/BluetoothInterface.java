@@ -275,7 +275,8 @@ public class BluetoothInterface implements PermissionCallback {
                             Log.d("BT", "Device " + device.getName() + " Has UUID: " + p.toString());
                             String deviceName = device.getName();
                             String deviceHardwareAddress = device.getAddress(); // MAC address
-                            if (discoveredBluetoothDeviceList.get(deviceHardwareAddress) == null) {
+                            if (discoveredBluetoothDeviceList.get(deviceHardwareAddress) == null
+                            && p.toString().equals(uuid.toString())) {
                                 discoveredBluetoothDeviceList.put(deviceHardwareAddress, device);
                                 addDeviceMainScreenToDeviceLister(
                                         deviceName + ", " + deviceHardwareAddress,
@@ -350,11 +351,11 @@ public class BluetoothInterface implements PermissionCallback {
         }
 
         // Initialize the thread to manage the socket and start data transfer
-        mConnectedThread = new ConnectedThread(socket);
+        mConnectedThread = new ConnectedThread(socket, handler);
         mConnectedThread.start();
 
         // Optional: Send a status update message back to your UI Activity/Fragment
-        Message message = handler.obtainMessage(MyConstants.MESSAGE_STATE_CHANGE, MyConstants.STATE_CONNECTED, -1);
+        Message message = handler.obtainMessage(MyConstants.MESSAGE_STATE_CHANGE, MyConstants.STATE_CONNECTED, -1, socket.getRemoteDevice());
         message.sendToTarget();
     }
 
@@ -548,9 +549,11 @@ class ConnectedThread extends Thread {
     private final BluetoothSocket mmSocket;
     private final InputStream mmInStream;
     private final OutputStream mmOutStream;
+    private Handler handler;
 
-    public ConnectedThread(BluetoothSocket socket) {
+    public ConnectedThread(BluetoothSocket socket, Handler handler) {
         mmSocket = socket;
+        this.handler = handler;
         try {
             mmInStream = socket.getInputStream();
             mmOutStream = socket.getOutputStream();
@@ -572,23 +575,24 @@ class ConnectedThread extends Thread {
         }*/
 
         try {
-            InputStream ins = mmSocket.getInputStream();
             StringBuilder textBuilder = new StringBuilder();
             try (Reader reader = new BufferedReader(new InputStreamReader
-                    (ins, StandardCharsets.UTF_8))) {
+                    (mmInStream, StandardCharsets.UTF_8))) {
                 int c = 0;
                 while ((c = reader.read()) != -1) {
                     textBuilder.append((char) c);
                 }
             }
+            Message message = handler.obtainMessage(MyConstants.MESSAGE_READ,-1,-1, new String(textBuilder));
+            handler.sendMessage(message);
         } catch (IOException e) {
             Log.e("Socket data reading error", e.toString());
         }
     }
 
-    public void write(byte[] bytes) { // Send data
+    public void write(String str) { // Send data
         try {
-            mmOutStream.write(bytes);
+            mmOutStream.write(str.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) { }
     }
 
