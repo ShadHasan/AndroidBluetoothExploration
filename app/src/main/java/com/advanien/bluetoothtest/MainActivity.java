@@ -61,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
                     Manifest.permission.BLUETOOTH_CONNECT,
                     Manifest.permission.BLUETOOTH_SCAN,
                     Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.BLUETOOTH_ADVERTISE,
                     Manifest.permission.ACCESS_FINE_LOCATION
             };
 
@@ -72,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
                     Manifest.permission.CAMERA,
                     Manifest.permission.BLUETOOTH,
                     Manifest.permission.BLUETOOTH_ADMIN,
+                    Manifest.permission.BLUETOOTH_ADVERTISE,
                     Manifest.permission.ACCESS_COARSE_LOCATION
             };
             requestPermissionsLauncher.launch(permissionsToRequest);
@@ -219,7 +221,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
         openConnectionButton.setOnClickListener(v -> {
-
+            bluetoothInterface.makeMeDiscoverable();
+            bluetoothInterface.openServerConnection();
         });
 
     }

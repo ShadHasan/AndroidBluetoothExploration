@@ -1,7 +1,6 @@
 package com.advanien.bluetoothtest.lib;
 
 
-import static androidx.core.content.ContextCompat.registerReceiver;
 import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -15,13 +14,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Parcelable;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TableLayout;
@@ -29,11 +27,7 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.advanien.bluetoothtest.R;
 import com.advanien.bluetoothtest.model.MyConstants;
@@ -47,7 +41,9 @@ import java.io.Reader;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class BluetoothInterface implements PermissionCallback {
@@ -63,7 +59,7 @@ public class BluetoothInterface implements PermissionCallback {
     private String adapterName;
     private Handler handler;
     Context context;
-    List<BluetoothDevice> discoveredBluetoothDeviceList;
+    Map<String, BluetoothDevice> discoveredBluetoothDeviceList;
     private ConnectedThread mConnectedThread;
     private OpenConnection serverConnection;
     private BluetoothClient bluetoothClient;
@@ -84,7 +80,7 @@ public class BluetoothInterface implements PermissionCallback {
         );
     }
 
-    public void addDeviceMainScreenToDeviceLister(String name, int elementIndex) {
+    public void addDeviceMainScreenToDeviceLister(String name, String deviceHardwareAddress) {
         TextView textView = new TextView(context);
         textView.setText(name);
         textView.setLayoutParams(new TableRow.LayoutParams(
@@ -108,11 +104,11 @@ public class BluetoothInterface implements PermissionCallback {
                 TableRow.LayoutParams.WRAP_CONTENT,
                 1.0f
         ));
-        button.setId(elementIndex);
+        button.setTag(deviceHardwareAddress);
 
         // On click connect button, start connecting picked discover device as client.
         button.setOnClickListener(v -> {
-            ListenerPairingDevice = discoveredBluetoothDeviceList.get(elementIndex);
+            ListenerPairingDevice = discoveredBluetoothDeviceList.get(deviceHardwareAddress);
             bluetoothClient = new BluetoothClient(this);
             bluetoothClient.start();
         });
@@ -148,8 +144,10 @@ public class BluetoothInterface implements PermissionCallback {
     public void discoveryAndRegisterFoundDevice() {
         Log.d("Discovery for device", "started");
         deviceLister.removeAllViews();
-        discoveredBluetoothDeviceList = new ArrayList<>();
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+        discoveredBluetoothDeviceList = new HashMap<>();
+        if (ActivityCompat
+                .checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN)
+                != PackageManager.PERMISSION_GRANTED) {
             Log.d("called", "Here 1");
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -190,11 +188,13 @@ public class BluetoothInterface implements PermissionCallback {
                     String deviceName = device.getName();
                     String deviceHardwareAddress = device.getAddress(); // MAC address
                     Log.d("Device discovered", deviceName + ", " + deviceHardwareAddress);
-                    discoveredBluetoothDeviceList.add(device);
-                    addDeviceMainScreenToDeviceLister(
-                            deviceName + ", " + deviceHardwareAddress,
-                            discoveredBluetoothDeviceList.lastIndexOf(device)
-                            );
+                    if (discoveredBluetoothDeviceList.get(deviceHardwareAddress) == null) {
+                        discoveredBluetoothDeviceList.put(deviceHardwareAddress, device);
+                        addDeviceMainScreenToDeviceLister(
+                                deviceName + ", " + deviceHardwareAddress,
+                                deviceHardwareAddress
+                        );
+                    }
 
                 }
             }
@@ -217,7 +217,7 @@ public class BluetoothInterface implements PermissionCallback {
     public void discoveryAndRegisterAppFoundDevice() {
         Log.d("Discovery for app device", "started");
         deviceLister.removeAllViews();
-        discoveredBluetoothDeviceList = new ArrayList<>();
+        discoveredBluetoothDeviceList = new HashMap<>();
         if (ActivityCompat.checkSelfPermission(
                 context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
@@ -241,36 +241,57 @@ public class BluetoothInterface implements PermissionCallback {
         // 1. Handle results in BroadcastReceiver
         BroadcastReceiver receiver = new BroadcastReceiver() {
             public void onReceive(Context context, Intent intent) {
-                if (BluetoothDevice.ACTION_UUID.equals(intent.getAction())) {
+                String action = intent.getAction();
+                if (ActivityCompat.checkSelfPermission(
+                        context, Manifest.permission.BLUETOOTH_SCAN) !=
+                        PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return;
+                }
+                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                    // 1. Get the device from the discovered intent
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if (ActivityCompat.checkSelfPermission(
-                            context, Manifest.permission.BLUETOOTH_SCAN) !=
-                            PackageManager.PERMISSION_GRANTED) {
-                        // TODO: Consider calling
-                        //    ActivityCompat#requestPermissions
-                        // here to request the missing permissions, and then overriding
-                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                        //                                          int[] grantResults)
-                        // to handle the case where the user grants the permission. See the documentation
-                        // for ActivityCompat#requestPermissions for more details.
-                        return;
-                    }
-                    Log.d("Listing device", "======");
-                    String deviceName = device.getName();
-                    String deviceHardwareAddress = device.getAddress(); // MAC address
-                    Log.d("Device discovered", deviceName + ", " + deviceHardwareAddress);
-                    discoveredBluetoothDeviceList.add(device);
-                    addDeviceMainScreenToDeviceLister(
-                            deviceName + ", " + deviceHardwareAddress,
-                            discoveredBluetoothDeviceList.lastIndexOf(device)
-                    );
 
+                    if (device != null) {
+                        Log.d("BT", "Found Device: " + device.getName() + " [" + device.getAddress() + "]");
+
+                        // 2. CRITICAL STEP: Explicitly request UUID service discovery
+                        device.fetchUuidsWithSdp();
+                    }
+                }
+                else if (BluetoothDevice.ACTION_UUID.equals(action)) {
+                    // 3. This block will now successfully trigger!
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    Parcelable[] uuidExtra = intent.getParcelableArrayExtra(BluetoothDevice.EXTRA_UUID);
+
+                    if (uuidExtra != null) {
+                        for (Parcelable p : uuidExtra) {
+                            Log.d("BT", "Device " + device.getName() + " Has UUID: " + p.toString());
+                            String deviceName = device.getName();
+                            String deviceHardwareAddress = device.getAddress(); // MAC address
+                            if (discoveredBluetoothDeviceList.get(deviceHardwareAddress) == null) {
+                                discoveredBluetoothDeviceList.put(deviceHardwareAddress, device);
+                                addDeviceMainScreenToDeviceLister(
+                                        deviceName + ", " + deviceHardwareAddress,
+                                        deviceHardwareAddress
+                                );
+                            }
+                        }
+                    }
                 }
             }
         };
 
         // 2. Register for ACTION_FOUND
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_FOUND); // Must be explicitly added
+        filter.addAction(BluetoothDevice.ACTION_UUID); // Must be explicitly added
 
         /*
         context: The context to register the receiver
@@ -353,6 +374,28 @@ public class BluetoothInterface implements PermissionCallback {
                 break;
         }
 
+    }
+
+    public void makeMeDiscoverable() {
+        // This makes YOUR device visible to others
+        Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300); // 300 seconds
+        if (ActivityCompat
+                .checkSelfPermission(context, Manifest.permission.BLUETOOTH_ADVERTISE)
+                != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            Log.d("Not enough permission", "Making discoverable");
+            return;
+        }
+        Log.d("Discoverable state", "starting");
+        context.startActivity(discoverableIntent);
+        Log.d("Discoverable state", "started");
     }
 
     public synchronized void openServerConnection() {
