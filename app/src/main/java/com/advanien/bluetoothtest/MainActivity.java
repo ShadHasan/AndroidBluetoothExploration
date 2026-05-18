@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout discoverMode;
     LinearLayout openBTMode;
     Button discoverModeButton;
+    TextView connectionStatusDisplay;
 
 
     // 1. Declare and register the launcher at the class level (before STARTED state)
@@ -156,13 +157,13 @@ public class MainActivity extends AppCompatActivity {
 
             switch (msg.what) {
                 case MyConstants.MESSAGE_STATE_CHANGE:
-                    BluetoothDevice connectedDev = (BluetoothDevice)msg.obj;
+                    String connectedDevName = (String)msg.obj;
                     switch (msg.arg1) {
                         case MyConstants.STATE_CONNECTED:
-                            setBluetoothStatus("Connected to device");
+                            setBluetoothStatus("Connected to device: " + connectedDevName);
                             break;
                         case MyConstants.STATE_CONNECTING:
-                            setBluetoothStatus("Connecting...");
+                            setBluetoothStatus("Connecting... "+ connectedDevName);
                             break;
                     }
                     break;
@@ -185,8 +186,14 @@ public class MainActivity extends AppCompatActivity {
     };
 
     // UI Update Methods
-    private void setBluetoothStatus(String text) { /* Update TextView */ }
-    private void updateBluetoothChatWindow(String text) { /* Append text to UI */ }
+    private void setBluetoothStatus(String text) {
+        /* Update TextView */
+        connectionStatusDisplay.setText(text);
+    }
+    private void updateBluetoothChatWindow(String text) {
+        /* Append text to UI */
+        Log.d("Receive Message", text);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -212,9 +219,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        openConnectionButton = findViewById(R.id.open_connection);
+        connectionStatusDisplay = findViewById(R.id.connection_status);
+
         discoverBluetoothButton = findViewById(R.id.list_bluetooth_dev_button);
         discoverBluetoothAppButton = findViewById(R.id.list_bluetooth_app_dev_button);
-        openConnectionButton = findViewById(R.id.open_connection);
         deviceListTable = findViewById(R.id.discovered_device_table);
         deviceListTable.removeAllViews();
 

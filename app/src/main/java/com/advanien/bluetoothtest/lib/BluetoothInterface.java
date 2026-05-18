@@ -344,18 +344,21 @@ public class BluetoothInterface implements PermissionCallback {
     }
 
     public void manageMyConnectedSocket(BluetoothSocket socket) {
+        // Optional: Send a status update message back to your UI Activity/Fragment
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
         // Cancel any existing running transfer thread first
         if (mConnectedThread != null) {
             mConnectedThread.cancel();
             mConnectedThread = null;
         }
-
         // Initialize the thread to manage the socket and start data transfer
         mConnectedThread = new ConnectedThread(socket, handler);
         mConnectedThread.start();
 
-        // Optional: Send a status update message back to your UI Activity/Fragment
-        Message message = handler.obtainMessage(MyConstants.MESSAGE_STATE_CHANGE, MyConstants.STATE_CONNECTED, -1, socket.getRemoteDevice());
+
+        Message message = handler.obtainMessage(MyConstants.MESSAGE_STATE_CHANGE, MyConstants.STATE_CONNECTED, -1, socket.getRemoteDevice().getName());
         message.sendToTarget();
     }
 
@@ -406,6 +409,15 @@ public class BluetoothInterface implements PermissionCallback {
 
     public synchronized void closeServerConnection() {
         serverConnection.cancel();
+    }
+
+    public void sendMessageToConnectedThread(String message) {
+        if (mConnectedThread != null && mConnectedThread.isAlive()) {
+            // Invoke the write method directly from the UI thread
+            mConnectedThread.write(message);
+        } else {
+            Toast.makeText(context, "Device not connected", Toast.LENGTH_SHORT).show();
+        }
     }
 
 }
