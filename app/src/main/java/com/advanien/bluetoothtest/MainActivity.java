@@ -46,9 +46,10 @@ public class MainActivity extends AppCompatActivity {
     TableLayout deviceListTable;
     LinearLayout discoverMode;
     LinearLayout openBTMode;
-    Button discoverModeButton;
+    LinearLayout afterConnectionMode;
     TextView connectionStatusDisplay;
     TextView messageReceiveDisplay;
+    TextView connectionDevStatus;
 
 
     // 1. Declare and register the launcher at the class level (before STARTED state)
@@ -161,7 +162,8 @@ public class MainActivity extends AppCompatActivity {
                     String connectedDevName = (String)msg.obj;
                     switch (msg.arg1) {
                         case MyConstants.STATE_CONNECTED:
-                            setBluetoothStatus("Connected to device: " + connectedDevName);
+                            changeAfterConnectionMode(
+                                    "Connected device "+connectedDevName);
                             break;
                         case MyConstants.STATE_CONNECTING:
                             setBluetoothStatus("Connecting... "+ connectedDevName);
@@ -206,6 +208,8 @@ public class MainActivity extends AppCompatActivity {
         discoverMode = findViewById(R.id.discover_mode);
         messageReceiveDisplay = findViewById(R.id.message_receive_display);
         openBTMode = findViewById(R.id.listener_mode);
+        afterConnectionMode = findViewById(R.id.after_connection);
+        connectionDevStatus = findViewById(R.id.connection_device_status);
 
         bluetoothModeSwitch = findViewById(R.id.switch_bluetooth_mode);
         // listen for user toggles
@@ -256,10 +260,19 @@ public class MainActivity extends AppCompatActivity {
         if(checked) {
             discoverMode.setVisibility(View.VISIBLE);
             openBTMode.setVisibility(View.GONE);
+            afterConnectionMode.setVisibility(View.GONE);
         } else {
             discoverMode.setVisibility(View.GONE);
             openBTMode.setVisibility(View.VISIBLE);
+            afterConnectionMode.setVisibility(View.GONE);
         }
+    }
+
+    public void changeAfterConnectionMode(String status_msg) {
+        discoverMode.setVisibility(View.GONE);
+        openBTMode.setVisibility(View.GONE);
+        afterConnectionMode.setVisibility(View.VISIBLE);
+        connectionDevStatus.setText(status_msg);
     }
 
 }
