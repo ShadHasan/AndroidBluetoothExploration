@@ -129,6 +129,7 @@
         <TableRow>
             <EditText
                 android:layout_width="0dp"
+                android:id="@+id/send_message_text"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
                 app:layout_constraintStart_toStartOf="parent"

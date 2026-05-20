@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TableLayout;
@@ -49,7 +50,14 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout afterConnectionMode;
     TextView connectionStatusDisplay;
     TextView messageReceiveDisplay;
+
+    // UI view related to after connection
     TextView connectionDevStatus;
+    EditText sendMessageText;
+    Button sendMessageButton;
+    TextView receiveMessageText;
+    Button disconnectButton;
+
 
 
     // 1. Declare and register the launcher at the class level (before STARTED state)
@@ -209,7 +217,6 @@ public class MainActivity extends AppCompatActivity {
         messageReceiveDisplay = findViewById(R.id.message_receive_display);
         openBTMode = findViewById(R.id.listener_mode);
         afterConnectionMode = findViewById(R.id.after_connection);
-        connectionDevStatus = findViewById(R.id.connection_device_status);
 
         bluetoothModeSwitch = findViewById(R.id.switch_bluetooth_mode);
         // listen for user toggles
@@ -233,7 +240,6 @@ public class MainActivity extends AppCompatActivity {
         discoverBluetoothAppButton = findViewById(R.id.list_bluetooth_app_dev_button);
         deviceListTable = findViewById(R.id.discovered_device_table);
         deviceListTable.removeAllViews();
-
 
         // Encapsulated function for bluetooth interaction
         bluetoothInterface = new BluetoothInterface(this, deviceListTable, mHandler);
@@ -269,10 +275,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void changeAfterConnectionMode(String status_msg) {
+        connectionDevStatus = null;
+        sendMessageText = null;
+        sendMessageButton = null;
+        receiveMessageText = null;
+        disconnectButton = null;
+
         discoverMode.setVisibility(View.GONE);
         openBTMode.setVisibility(View.GONE);
         afterConnectionMode.setVisibility(View.VISIBLE);
+
+        connectionDevStatus = findViewById(R.id.connection_device_status);
+        sendMessageText = findViewById(R.id.send_message_text);
+        sendMessageButton = findViewById(R.id.send_message_button);
+        receiveMessageText = findViewById(R.id.message_receive_display);
+        disconnectButton = findViewById(R.id.disconnect_button);
+
         connectionDevStatus.setText(status_msg);
+
+        sendMessageButton.setOnClickListener(v -> {
+
+        });
+
+        disconnectButton.setOnClickListener(v -> {
+            
+
+            manageBluetoothMode(false);
+        });
+
     }
 
 }
