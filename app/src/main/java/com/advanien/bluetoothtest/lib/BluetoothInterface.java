@@ -109,8 +109,7 @@ public class BluetoothInterface implements PermissionCallback {
         // On click connect button, start connecting picked discover device as client.
         button.setOnClickListener(v -> {
             ListenerPairingDevice = discoveredBluetoothDeviceList.get(deviceHardwareAddress);
-            bluetoothClient = new BluetoothClient(this);
-            bluetoothClient.start();
+            openBluetoothClient();
         });
 
         tableRow.addView(textView);
@@ -409,6 +408,14 @@ public class BluetoothInterface implements PermissionCallback {
 
     public synchronized void closeServerConnection() {
         serverConnection.cancel();
+    }
+
+    public synchronized void openBluetoothClient(){
+        bluetoothClient = new BluetoothClient(this);
+        bluetoothClient.start();
+    }
+    public synchronized void closeBluetoothClient() {
+        bluetoothClient.cancel();
     }
 
     public void sendMessageToConnectedThread(String message) {
