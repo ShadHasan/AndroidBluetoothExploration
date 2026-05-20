@@ -61,8 +61,8 @@ public class BluetoothInterface implements PermissionCallback {
     Context context;
     Map<String, BluetoothDevice> discoveredBluetoothDeviceList;
     private ConnectedThread mConnectedThread;
-    private OpenConnection serverConnection;
-    private BluetoothClient bluetoothClient;
+    private OpenConnection serverConnection = null;
+    private BluetoothClient bluetoothClient = null;
 
     public BluetoothInterface(Context context, TableLayout deviceLister, Handler handler) {
         bluetoothManager = context.getSystemService(BluetoothManager.class);
@@ -407,7 +407,14 @@ public class BluetoothInterface implements PermissionCallback {
     }
 
     public synchronized void closeServerConnection() {
-        serverConnection.cancel();
+        if (mConnectedThread != null) {
+            mConnectedThread.cancel();
+            mConnectedThread = null;
+        }
+        if (serverConnection != null) {
+            serverConnection.cancel();
+            serverConnection = null;
+        }
     }
 
     public synchronized void openBluetoothClient(){
@@ -415,7 +422,14 @@ public class BluetoothInterface implements PermissionCallback {
         bluetoothClient.start();
     }
     public synchronized void closeBluetoothClient() {
-        bluetoothClient.cancel();
+        if (mConnectedThread != null) {
+            mConnectedThread.cancel();
+            mConnectedThread = null;
+        }
+        if (bluetoothClient != null) {
+            bluetoothClient.cancel();
+            bluetoothClient = null;
+        }
     }
 
     public void sendMessageToConnectedThread(String message) {
@@ -583,36 +597,38 @@ class ConnectedThread extends Thread {
 
     public void run() {
         // Bytes reading sample
-        /*
+        StringBuilder msgStr = new StringBuilder();
         byte[] buffer = new byte[1024];
         int bytes;
         while (true) {
             try {
                 bytes = mmInStream.read(buffer); // Read data
-                // Handle received data here
-            } catch (IOException e) { break; }
-        }*/
-
-        try {
-            StringBuilder textBuilder = new StringBuilder();
-            try (Reader reader = new BufferedReader(new InputStreamReader
-                    (mmInStream, StandardCharsets.UTF_8))) {
-                int c = 0;
-                while ((c = reader.read()) != -1) {
-                    textBuilder.append((char) c);
+                msgStr.append(new String(buffer, StandardCharsets.UTF_8));
+                // Check for End of Stream and break
+                if (bytes == -1) {
+                    break;
                 }
+
+            } catch (IOException e) {
+                Log.e("Socket data reading error",new String(buffer, StandardCharsets.UTF_8), e);
+                break;
             }
-            Message message = handler.obtainMessage(MyConstants.MESSAGE_READ,-1,-1, new String(textBuilder));
+            Message message = handler
+                    .obtainMessage(
+                            MyConstants.MESSAGE_READ,-1,-1,new String(msgStr)
+                            );
             handler.sendMessage(message);
-        } catch (IOException e) {
-            Log.e("Socket data reading error", e.toString());
         }
     }
 
     public void write(String str) { // Send data
+        String str2 = str + -1;
         try {
-            mmOutStream.write(str.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) { }
+            mmOutStream.write(str2.getBytes(StandardCharsets.UTF_8));
+            Log.d("sent successfully", str2);
+        } catch (IOException e) {
+            Log.e("sending msg failed", str2, e);
+        }
     }
 
     public void cancel() {
